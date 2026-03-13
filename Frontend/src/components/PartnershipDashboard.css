@@ -1,0 +1,277 @@
+.partnership-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0fdf4 0%, #f5f5f5 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== HEADER ===== */
+.partnership-header {
+  background-color: #fff;
+  padding: 1rem 0;
+  box-shadow: 0 2px 10px rgba(0, 128, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.partnership-header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.partnership-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.partnership-logo-icon {
+  font-size: 1.8rem;
+}
+
+.partnership-logo-text {
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.partnership-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.partnership-user-email {
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.partnership-logout-btn {
+  padding: 0.5rem 1.2rem;
+  background: transparent;
+  color: #dc2626;
+  border: 2px solid #dc2626;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.partnership-logout-btn:hover {
+  background-color: #dc2626;
+  color: white;
+}
+
+/* ===== MAIN CONTENT ===== */
+.partnership-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 3rem 2rem;
+}
+
+/* ===== FORM CARD ===== */
+.partnership-form-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(22, 163, 74, 0.12);
+  width: 100%;
+  max-width: 700px;
+  padding: 3rem;
+}
+
+.form-card-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.form-card-header h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #15803d 0%, #16a34a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.form-card-header p {
+  color: #4b5563;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* ===== ERROR ===== */
+.partnership-error {
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #dc2626;
+  font-size: 0.95rem;
+}
+
+/* ===== FORM ===== */
+.partnership-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.partnership-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.4rem;
+}
+
+.partnership-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.partnership-form-group label {
+  color: #15803d;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.partnership-input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 2px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  resize: vertical;
+}
+
+.partnership-input:focus {
+  outline: none;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.partnership-input::placeholder {
+  color: #9ca3af;
+}
+
+/* ===== SUBMIT BUTTON ===== */
+.partnership-submit-btn {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin-top: 0.5rem;
+}
+
+.partnership-submit-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.4);
+}
+
+.partnership-submit-btn:active:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.partnership-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== SUCCESS CARD ===== */
+.partnership-success-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(22, 163, 74, 0.12);
+  width: 100%;
+  max-width: 550px;
+  padding: 3rem;
+  text-align: center;
+}
+
+.success-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.partnership-success-card h2 {
+  font-size: 2rem;
+  color: #15803d;
+  margin-bottom: 1rem;
+}
+
+.partnership-success-card p {
+  color: #4b5563;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.partnership-btn {
+  padding: 0.8rem 2rem;
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.partnership-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.4);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .partnership-header-content {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .partnership-form-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .partnership-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-card-header h2 {
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .partnership-main {
+    padding: 1.5rem 1rem;
+  }
+
+  .partnership-form-card {
+    padding: 1.5rem 1rem;
+  }
+
+  .partnership-success-card {
+    padding: 2rem 1.5rem;
+  }
+}

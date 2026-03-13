@@ -1,1 +1,19 @@
-"*.txt" 
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+*.sqlite3
+
+# Node
+node_modules/
+build/
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

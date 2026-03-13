@@ -1,0 +1,151 @@
+.admin-page {
+  min-height: 100vh;
+  background: #f8fafc;
+  padding: 2rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 1.5rem 2rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.admin-header h2 {
+  margin: 0 0 0.3rem 0;
+  color: #0f172a;
+}
+
+.admin-header p {
+  margin: 0;
+  color: #64748b;
+}
+
+.logout-btn {
+  padding: 0.7rem 1.5rem;
+  background: #0f172a;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.admin-error {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.admin-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.admin-section h3 {
+  margin: 0 0 1rem 0;
+  color: #0f172a;
+}
+
+.admin-empty {
+  color: #64748b;
+}
+
+.admin-card-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-card {
+  border: 1px solid #e2e8f0;
+  padding: 1rem;
+  border-radius: 12px;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.admin-card-info {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.admin-name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-email,
+.admin-address {
+  color: #64748b;
+}
+
+.admin-docs {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.admin-docs a {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-docs span {
+  color: #94a3b8;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.approve-btn {
+  background: #16a34a;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.reject-btn {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.admin-table {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.admin-table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #e2e8f0;
+  color: #0f172a;
+}
+
+.admin-table-header {
+  background: #f1f5f9;
+  font-weight: 700;
+  border-top: none;
+}

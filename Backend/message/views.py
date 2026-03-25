@@ -1,4 +1,3 @@
-# views.py
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
@@ -9,7 +8,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-from .models import ChatMessage, UserProfile, PartnershipRequest
+from .models import ChatMessage, UserProfile, PartnershipRequest, SkinCareRoutine
 
 ADMIN_EMAIL = 'admin@gmail.com'
 ADMIN_PASSWORD = 'admin123'
@@ -122,6 +121,8 @@ def api_login(request):
                 verification_status = 'approved'
 
             if role == 'dermatologist' and verification_status != 'approved':
+                if verification_status == 'rejected':
+                    return Response({'error': 'Dermatologist verification rejected'}, status=403)
                 return Response({'error': 'Dermatologist verification pending'}, status=403)
             
             return Response({
@@ -201,14 +202,20 @@ def api_admin_dermatologist_queue(request):
 
     status = request.query_params.get('status', 'pending')
     dermatologists = UserProfile.objects.filter(role='dermatologist', verification_status=status).select_related('user')
+
+    def full_url(file_field):
+        if not file_field:
+            return None
+        return request.build_absolute_uri(file_field.url)
+
     data = [{
         'user_id': p.user.id,
         'email': p.user.email,
         'name': p.name,
         'address': p.address,
         'verification_status': p.verification_status,
-        'nmc_certificate': p.nmc_certificate.url if p.nmc_certificate else None,
-        'pan_card': p.pan_card.url if p.pan_card else None
+        'nmc_certificate': full_url(p.nmc_certificate),
+        'pan_card': full_url(p.pan_card)
     } for p in dermatologists]
     return Response({'dermatologists': data}, status=200)
 
@@ -246,19 +253,34 @@ def api_admin_partnership_queue(request):
         return Response({'error': 'Forbidden'}, status=403)
 
     status = request.query_params.get('status', 'pending')
-    requests = PartnershipRequest.objects.filter(status=status).select_related('user').order_by('-created_at')
-    data = [{
-        'id': pr.id,
-        'user_email': pr.user.email,
-        'company_name': pr.company_name,
-        'address': pr.address,
-        'contact_number': pr.contact_number,
-        'email': pr.email,
-        'description': pr.description,
-        'product_suggestion': pr.product_suggestion,
-        'status': pr.status,
-        'created_at': pr.created_at.strftime('%Y-%m-%d %H:%M')
-    } for pr in requests]
+    requests = PartnershipRequest.objects.filter(status=status).select_related('user', 'user__profile').order_by('-created_at')
+
+    def full_url(file_field):
+        if not file_field:
+            return None
+        return request.build_absolute_uri(file_field.url)
+
+    data = []
+    for pr in requests:
+        try:
+            partner_pan_card = full_url(pr.user.profile.partner_pan_card)
+        except UserProfile.DoesNotExist:
+            partner_pan_card = None
+
+        data.append({
+            'id': pr.id,
+            'user_email': pr.user.email,
+            'company_name': pr.company_name,
+            'address': pr.address,
+            'contact_number': pr.contact_number,
+            'email': pr.email,
+            'description': pr.description,
+            'product_suggestion': pr.product_suggestion,
+            'status': pr.status,
+            'partner_pan_card': partner_pan_card,
+            'created_at': pr.created_at.strftime('%Y-%m-%d %H:%M')
+        })
+
     return Response({'partnership_requests': data}, status=200)
 
 # -----------------
@@ -289,8 +311,14 @@ def api_admin_set_partnership_status(request, request_id):
 # -------------
 @csrf_exempt
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def api_logout(request):
+    # Delete the DRF token when present so it cannot be reused
+    if hasattr(request, 'auth') and request.auth is not None:
+        try:
+            request.auth.delete()
+        except Exception:
+            pass
     logout(request)
     return Response({'message': 'Logged out successfully'}, status=200)
 
@@ -354,10 +382,20 @@ def api_send_message(request):
         except UserProfile.DoesNotExist:
             return None
 
+    def get_profile(user):
+        try:
+            return UserProfile.objects.get(user=user)
+        except UserProfile.DoesNotExist:
+            return None
+
     sender_role = get_role(request.user)
     recipient_role = get_role(recipient)
     if sender_role == 'customer' and recipient_role != 'dermatologist':
         return Response({'error': 'Customers can only message dermatologists'}, status=400)
+    if sender_role == 'customer' and recipient_role == 'dermatologist':
+        recipient_profile = get_profile(recipient)
+        if not recipient_profile or recipient_profile.verification_status != 'approved':
+            return Response({'error': 'You can only message approved dermatologists'}, status=403)
     if sender_role == 'dermatologist' and recipient_role != 'customer':
         return Response({'error': 'Dermatologists can only message customers'}, status=400)
 
@@ -381,7 +419,10 @@ def api_send_message(request):
 @permission_classes([IsAuthenticated])
 def api_get_dermatologists(request):
     try:
-        dermatologists = UserProfile.objects.filter(role='dermatologist').select_related('user').exclude(user=request.user)
+        dermatologists = UserProfile.objects.filter(
+            role='dermatologist',
+            verification_status='approved'
+        ).select_related('user').exclude(user=request.user)
         data = [{
             'email': doc.user.email,
             'name': doc.name,
@@ -413,10 +454,20 @@ def api_get_chat_history(request):
         except UserProfile.DoesNotExist:
             return None
 
+    def get_profile(user):
+        try:
+            return UserProfile.objects.get(user=user)
+        except UserProfile.DoesNotExist:
+            return None
+
     sender_role = get_role(request.user)
     other_role = get_role(other_user)
     if sender_role == 'customer' and other_role != 'dermatologist':
         return Response({'error': 'Invalid recipient'}, status=403)
+    if sender_role == 'customer' and other_role == 'dermatologist':
+        other_profile = get_profile(other_user)
+        if not other_profile or other_profile.verification_status != 'approved':
+            return Response({'error': 'Invalid recipient'}, status=403)
     if sender_role == 'dermatologist' and other_role != 'customer':
         return Response({'error': 'Invalid recipient'}, status=403)
 
@@ -510,3 +561,48 @@ def api_partnership(request):
         return Response({'message': 'Partnership request submitted successfully'}, status=201)
     except Exception as e:
         return Response({'error': str(e)}, status=500)
+
+
+# -----------------
+# Skincare Routine API
+# -----------------
+@csrf_exempt
+@api_view(['GET', 'POST', 'PUT'])
+@permission_classes([IsAuthenticated])
+def api_skincare_routine(request):
+    """Get, create, or update skincare routine for the authenticated user"""
+    try:
+        if request.method == 'GET':
+            # Get the user's routine
+            try:
+                routine = SkinCareRoutine.objects.get(user=request.user)
+                return Response({
+                    'id': routine.id,
+                    'routine_data': routine.routine_data,
+                    'created_at': routine.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                    'updated_at': routine.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+                }, status=200)
+            except SkinCareRoutine.DoesNotExist:
+                return Response({
+                    'routine_data': [],
+                    'message': 'No routine found for this user'
+                }, status=200)
+        
+        elif request.method == 'POST' or request.method == 'PUT':
+            # Create or update routine
+            routine_data = request.data.get('routine_data')
+            
+            if routine_data is None:
+                return Response({'error': 'routine_data is required'}, status=400)
+            
+            routine, created = SkinCareRoutine.objects.get_or_create(user=request.user)
+            routine.routine_data = routine_data
+            routine.save()
+            
+            from .serializers import SkinCareRoutineSerializer
+            serializer = SkinCareRoutineSerializer(routine)
+            return Response(serializer.data, status=201 if created else 200)
+    
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+

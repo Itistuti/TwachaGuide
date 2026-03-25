@@ -50,13 +50,17 @@ function Chat({ setLoggedIn }) {
 
 
   const logout = async () => {
-
-    await fetch(`${API}/logout/`,{
-      method:"POST",
-      credentials:"include"
-    });
-
-    setLoggedIn(false);
+    try {
+      const token = localStorage.getItem('authToken');
+      await fetch(`${API}/logout/`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Token ${token}` } : {}) }
+      });
+    } catch (_) {}
+    finally {
+      localStorage.removeItem('authToken');
+      setLoggedIn(false);
+    }
   };
 
   return (

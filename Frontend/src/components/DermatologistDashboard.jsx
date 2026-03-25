@@ -24,6 +24,16 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
     return token ? { 'Authorization': `Token ${token}` } : {};
   };
 
+  // Centralised 401 handler — forces re-login rather than silently failing
+  const handle401 = (res) => {
+    if (res && res.status === 401) {
+      localStorage.removeItem('authToken');
+      setLoggedIn(false);
+      return true;
+    }
+    return false;
+  };
+
   // Build contact list from messages — group by the other user
   const getContacts = () => {
     const contactMap = {};
@@ -60,10 +70,17 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
         headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
         cache: 'no-store'
       });
-
+      if (handle401(res)) return;
       if (res.ok) {
         const data = await res.json();
-        setMessages(data.messages);
+        // Only update state if message count or content changed (deduplication)
+        setMessages(prev => {
+          if (prev.length !== data.messages.length) return data.messages;
+          if (prev.length > 0 && data.messages.length > 0) {
+            if (prev[prev.length - 1].id !== data.messages[data.messages.length - 1].id) return data.messages;
+          }
+          return prev;
+        });
       }
     } catch (error) {
       console.error("Error loading messages:", error);
@@ -74,14 +91,14 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
     loadPatients();
     loadMessages();
     loadDoctorProfile();
-    const interval = setInterval(() => { loadPatients(); loadMessages(); }, 2000);
+    const interval = setInterval(() => { loadPatients(); loadMessages(); }, 500);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     if (selectedPatient) {
       selectedPatientRef.current = selectedPatient;
-      loadConversation();
+      loadConversation(selectedPatient.email);
     } else {
       selectedPatientRef.current = null;
     }
@@ -90,9 +107,9 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
   useEffect(() => {
     pollRef.current = setInterval(() => {
       if (selectedPatientRef.current) {
-        loadConversation();
+        loadConversation(selectedPatientRef.current.email);
       }
-    }, 2000);
+    }, 500);
     return () => { clearInterval(pollRef.current); pollRef.current = null; };
   }, []);
 
@@ -100,7 +117,7 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
     const refreshActiveChat = () => {
       loadMessages();
       if (selectedPatientRef.current) {
-        loadConversation();
+        loadConversation(selectedPatientRef.current.email);
       }
     };
 
@@ -118,6 +135,8 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
+
+
 
   const sendMessage = async () => {
     if (message.trim() === "") return;
@@ -154,6 +173,7 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
       const response = await fetch(`${API}/api/patients/`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeader() }
       });
+      if (handle401(response)) return;
       if (response.ok) {
         const data = await response.json();
         setPatients(data);
@@ -168,10 +188,10 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
       const res = await fetch(`${API}/profile/`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeader() }
       });
+      if (handle401(res)) return;
       if (res.ok) {
         const data = await res.json();
         if (data.role && data.role !== 'dermatologist') {
-          alert('Session role mismatch. Please log in as a dermatologist.');
           setLoggedIn(false);
           return;
         }
@@ -186,13 +206,14 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const loadConversation = async () => {
-    if (!selectedPatient) return;
+  const loadConversation = async (patientEmail = selectedPatientRef.current?.email) => {
+    if (!patientEmail) return;
     try {
-      const response = await fetch(`${API}/api/chat_history/?with=${selectedPatient.email}`, {
+      const response = await fetch(`${API}/api/chat_history/?with=${patientEmail}`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
         cache: 'no-store'
       });
+      if (handle401(response)) return;
       if (response.ok) {
         const data = await response.json();
         setConversationMessages(data.messages || []);
@@ -234,10 +255,11 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
       });
 
       if (response.ok) {
-        await loadConversation();
+        await loadConversation(selectedPatient.email);
       } else {
         setConversationMessages(prev => prev.filter(m => m !== optimisticMsg));
         setMessage(messageContent);
+        if (handle401(response)) return;
         const err = await response.json();
         alert('Error: ' + (err.error || err.detail || 'Unknown error'));
       }
@@ -249,12 +271,16 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
   };
 
   const logout = async () => {
-    await fetch(`${API}/logout/`, {
-      method: "POST",
-      headers: { 'Content-Type': 'application/json', ...getAuthHeader() }
-    });
-    localStorage.removeItem('authToken');
-    setLoggedIn(false);
+    try {
+      await fetch(`${API}/logout/`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() }
+      });
+    } catch (_) {}
+    finally {
+      localStorage.removeItem('authToken');
+      setLoggedIn(false);
+    }
   };
 
   return (
@@ -410,25 +436,6 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
             </div>
           )}
         </main>
-
-        {/* Right Panel - Patient Stats */}
-        <aside className="right-panel">
-          <div className="panel-card">
-            <h4>📊 Today's Stats</h4>
-            <div className="stat-item">
-              <span>Total Patients</span>
-              <strong>{patients.length}</strong>
-            </div>
-            <div className="stat-item">
-              <span>Active Conversations</span>
-              <strong>{selectedPatient ? 1 : 0}</strong>
-            </div>
-            <div className="stat-item">
-              <span>Messages Today</span>
-              <strong>{conversationMessages.length}</strong>
-            </div>
-          </div>
-        </aside>
       </div>
     </div>
   );

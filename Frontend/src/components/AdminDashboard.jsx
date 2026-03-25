@@ -10,6 +10,25 @@ function AdminDashboard({ setLoggedIn, userEmail }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const toAbsoluteUrl = (url) => {
+    if (!url) return "";
+    return url.startsWith('http') ? url : `${API}${url}`;
+  };
+
+  const renderDocumentPreview = (label, url) => {
+    if (!url) {
+      return <span>{`Missing ${label}`}</span>;
+    }
+
+    const src = toAbsoluteUrl(url);
+    return (
+      <div className="admin-doc-item">
+        <img src={src} alt={label} className="admin-doc-image" />
+        <a href={src} target="_blank" rel="noreferrer">{label}</a>
+      </div>
+    );
+  };
+
   const getAuthHeader = () => {
     const token = localStorage.getItem('authToken');
     return token ? { 'Authorization': `Token ${token}` } : {};
@@ -114,12 +133,16 @@ function AdminDashboard({ setLoggedIn, userEmail }) {
   };
 
   const logout = async () => {
-    await fetch(`${API}/logout/`, {
-      method: "POST",
-      headers: { 'Content-Type': 'application/json', ...getAuthHeader() }
-    });
-    localStorage.removeItem('authToken');
-    setLoggedIn(false);
+    try {
+      await fetch(`${API}/logout/`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() }
+      });
+    } catch (_) {}
+    finally {
+      localStorage.removeItem('authToken');
+      setLoggedIn(false);
+    }
   };
 
   return (
@@ -148,16 +171,8 @@ function AdminDashboard({ setLoggedIn, userEmail }) {
                   <div className="admin-address">{item.address || 'No address provided'}</div>
                 </div>
                 <div className="admin-docs">
-                  {item.nmc_certificate ? (
-                    <a href={item.nmc_certificate} target="_blank" rel="noreferrer">NMC Certificate</a>
-                  ) : (
-                    <span>Missing NMC</span>
-                  )}
-                  {item.pan_card ? (
-                    <a href={item.pan_card} target="_blank" rel="noreferrer">PAN Card</a>
-                  ) : (
-                    <span>Missing PAN</span>
-                  )}
+                  {renderDocumentPreview('NMC Certificate', item.nmc_certificate)}
+                  {renderDocumentPreview('PAN Card', item.pan_card)}
                 </div>
                 <div className="admin-actions">
                   <button
@@ -197,7 +212,10 @@ function AdminDashboard({ setLoggedIn, userEmail }) {
                   <div className="admin-address">Requested by: {item.user_email}</div>
                 </div>
                 <div className="admin-docs">
-                  <span>{item.product_suggestion}</span>
+                  <div className="admin-doc-item">
+                    <span>Product Suggestion: {item.product_suggestion}</span>
+                  </div>
+                  {renderDocumentPreview('Partner PAN Card', item.partner_pan_card)}
                 </div>
                 <div className="admin-actions">
                   <button

@@ -88,7 +88,6 @@ function PartnershipDashboard({ setLoggedIn, userEmail }) {
       <header className="partnership-header">
         <div className="partnership-header-content">
           <div className="partnership-logo">
-            <span className="partnership-logo-icon">🤝</span>
             <span className="partnership-logo-text">TwachaGuide Partnership</span>
           </div>
           <div className="partnership-header-right">
@@ -104,7 +103,6 @@ function PartnershipDashboard({ setLoggedIn, userEmail }) {
       <main className="partnership-main">
         {submitted ? (
           <div className="partnership-success-card">
-            <div className="success-icon">✅</div>
             <h2>Thank You!</h2>
             <p>
               Your partnership request has been submitted successfully. Our team
@@ -172,7 +170,7 @@ function PartnershipDashboard({ setLoggedIn, userEmail }) {
                     type="tel"
                     id="contactNumber"
                     name="contactNumber"
-                    placeholder="+91 XXXXX XXXXX"
+                    placeholder="+977 XXXXX XXXXX"
                     value={formData.contactNumber}
                     onChange={handleChange}
                     className="partnership-input"

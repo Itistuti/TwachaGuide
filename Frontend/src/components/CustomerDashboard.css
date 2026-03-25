@@ -135,7 +135,8 @@
 .onboarding-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .onboarding-header {
@@ -342,6 +343,40 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
+}
+
+.recommendations-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.recommendations-header,
+.recommendations-footer {
+  padding: 1.5rem;
+  border-bottom: 2px solid #f0fdf4;
+}
+
+.recommendations-footer {
+  border-bottom: none;
+  border-top: 2px solid #f0fdf4;
+}
+
+.recommendations-full {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: #fafafa;
+}
+
+.recommendations-text {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .chat-header-section,

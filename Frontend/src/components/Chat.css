@@ -4,7 +4,7 @@
   justify-content: center;
   align-items: center;
   background: linear-gradient(135deg, #f0fdf4 0%, #f5f5f5 100%);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: Arial, 'Times New Roman', serif, sans-serif;
 }
 
 .chat-container {

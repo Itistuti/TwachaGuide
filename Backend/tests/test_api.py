@@ -12,7 +12,7 @@ print("Registering customer...")
 resp = requests.post(f'{API}/register/', json={
     'email': 'customer1@test.com',
     'password': 'test123',
-    'name': 'Test Customer',
+    'name': 'Customer One',
     'address': '123 Main St',
     'role': 'customer'
 })
@@ -25,7 +25,7 @@ print("Registering dermatologist...")
 resp = requests.post(f'{API}/register/', json={
     'email': 'doc1@test.com',
     'password': 'test123',
-    'name': 'Dr. Smith',
+    'name': 'Dermatologist One',
     'address': '456 Oak Ave',
     'role': 'dermatologist'
 })

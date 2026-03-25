@@ -6,7 +6,6 @@ const OPENROUTER_API_KEY = "sk-or-v1-9054dfa3e588c46f113901dcb70ad0d38b8f5a83e78
 const MODEL = "nvidia/nemotron-3-nano-30b-a3b:free";
 
 function CustomerDashboard({ setLoggedIn, userEmail }) {
-  const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef(null);
   const [loading, setLoading] = useState(false);
@@ -17,20 +16,9 @@ function CustomerDashboard({ setLoggedIn, userEmail }) {
   const [showProductSuggestions, setShowProductSuggestions] = useState(false);
   const [showRoutineGenerator, setShowRoutineGenerator] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [routineRows, setRoutineRows] = useState(() => {
-    const saved = localStorage.getItem('myRoutine');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (_) {
-        return null;
-      }
-    }
-    return null;
-  });
+  const [routineRows, setRoutineRows] = useState(null);
   const [routineSaved, setRoutineSaved] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
-  const [recommendations, setRecommendations] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [onboardingAnswers, setOnboardingAnswers] = useState({});
   const [skincareRecommendations, setSkincareRecommendations] = useState(null);
@@ -42,6 +30,13 @@ function CustomerDashboard({ setLoggedIn, userEmail }) {
   const [conversationMessages, setConversationMessages] = useState([]);
   const [showAiAssistant, setShowAiAssistant] = useState(false);
   const [funTip, setFunTip] = useState("");
+  const [incomingConversations, setIncomingConversations] = useState([]);
+
+  const formatDoctorName = (nameOrEmail) => {
+    const value = (nameOrEmail || '').toString().trim();
+    if (!value) return 'Dermatologist';
+    return value.replace(/^(dr\.?\s*)+/i, '').trim() || 'Dermatologist';
+  };
 
   const pollRef = useRef(null);
   const selectedDermRef = useRef(null);
@@ -50,6 +45,52 @@ function CustomerDashboard({ setLoggedIn, userEmail }) {
     const token = localStorage.getItem('authToken');
     return token ? { 'Authorization': `Token ${token}` } : {};
   };
+
+  // Poll all conversations so customer sees incoming messages in real-time
+  const loadAllConversations = async () => {
+    try {
+      const convos = {};
+      for (const derm of dermatologists) {
+        try {
+          const res = await fetch(`${API}/api/chat_history/?with=${derm.email}`,
+            { headers: { 'Content-Type': 'application/json', ...getAuthHeader() }, cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.messages && data.messages.length > 0) {
+              const lastMsg = data.messages[data.messages.length - 1];
+              const msgTime = new Date(lastMsg.timestamp);
+              const isToday = msgTime.toDateString() === new Date().toDateString();
+              const timeStr = isToday 
+                ? msgTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                : msgTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              convos[derm.email] = {
+                dermatologist: derm,
+                lastMessage: lastMsg,
+                lastMessageTime: timeStr,
+                preview: lastMsg.message.substring(0, 50) + (lastMsg.message.length > 50 ? '...' : '')
+              };
+            }
+          }
+        } catch (e) {
+          console.error(`Conversation error with ${derm.email}:`, e);
+        }
+      }
+      setIncomingConversations(Object.values(convos).sort((a, b) => 
+        new Date(b.lastMessage.timestamp) - new Date(a.lastMessage.timestamp)
+      ));
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+    }
+  };
+
+  // Auto-reload conversations every 500ms so new messages appear immediately
+  useEffect(() => {
+    if (dermatologists.length > 0 && !selectedDermatologist) {
+      loadAllConversations();
+      const interval = setInterval(loadAllConversations, 500);
+      return () => clearInterval(interval);
+    }
+  }, [dermatologists, selectedDermatologist]);
 
   const loadUserProfile = async () => {
     try {
@@ -76,20 +117,27 @@ function CustomerDashboard({ setLoggedIn, userEmail }) {
     }
   }, [showProfile]);
 
-  const loadMessages = async () => {
+  const loadRoutine = async () => {
     try {
-      const res = await fetch(`${API}/api/messages/`, {
+      const res = await fetch(`${API}/api/skincare_routine/`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeader() }
       });
-
       if (res.ok) {
         const data = await res.json();
-        setMessages(data.messages);
+        if (data.routine_data && data.routine_data.length > 0) {
+          setRoutineRows(data.routine_data);
+        }
       }
     } catch (error) {
-      console.error("Error loading messages:", error);
+      console.error('Error loading routine:', error);
     }
   };
+
+  useEffect(() => {
+    if (showRoutineGenerator) {
+      loadRoutine();
+    }
+  }, [showRoutineGenerator]);
 
   const loadDermatologists = async () => {
     try {
@@ -115,7 +163,7 @@ function CustomerDashboard({ setLoggedIn, userEmail }) {
       selectedDermRef.current = selectedDermatologist;
       setConversationMessages([]);
       setMessage("");
-      loadConversation();
+      loadConversation(selectedDermatologist.email);
     } else {
       selectedDermRef.current = null;
     }
@@ -124,16 +172,16 @@ function CustomerDashboard({ setLoggedIn, userEmail }) {
   useEffect(() => {
     pollRef.current = setInterval(() => {
       if (selectedDermRef.current) {
-        loadConversation();
+        loadConversation(selectedDermRef.current.email);
       }
-    }, 2000);
+    }, 1000);
     return () => { clearInterval(pollRef.current); pollRef.current = null; };
   }, []);
 
   useEffect(() => {
     const refreshActiveChat = () => {
       if (selectedDermRef.current) {
-        loadConversation();
+        loadConversation(selectedDermRef.current.email);
       }
     };
 
@@ -184,7 +232,7 @@ function CustomerDashboard({ setLoggedIn, userEmail }) {
 
       if (res.ok) {
         // Replace optimistic list with confirmed server data
-        await loadConversation();
+        await loadConversation(selectedDermatologist.email);
       } else {
         // Roll back optimistic update on failure
         setConversationMessages(prev => prev.filter(m => m !== optimisticMsg));
@@ -208,11 +256,11 @@ function CustomerDashboard({ setLoggedIn, userEmail }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const loadConversation = async () => {
-    if (!selectedDermatologist) return;
+  const loadConversation = async (dermatologistEmail = selectedDermRef.current?.email) => {
+    if (!dermatologistEmail) return;
     try {
       const res = await fetch(
-        `${API}/api/chat_history/?with=${selectedDermatologist.email}`,
+        `${API}/api/chat_history/?with=${dermatologistEmail}`,
         { headers: { 'Content-Type': 'application/json', ...getAuthHeader() }, cache: 'no-store' }
       );
 
@@ -227,82 +275,18 @@ function CustomerDashboard({ setLoggedIn, userEmail }) {
   };
 
   const logout = async () => {
-    await fetch(`${API}/logout/`, {
-      method: "POST",
-      headers: { 'Content-Type': 'application/json', ...getAuthHeader() }
-    });
-    localStorage.removeItem('authToken');
-    setLoggedIn(false);
-  };
-
-
-  const skincareTips = {
-    "10-15": {
-      focus: "Basic hygiene and prevention",
-      routine: {
-        morning: ["Mild face wash (2x daily)", "Light moisturizer", "SPF 30+"],
-        night: ["Mild face wash", "Light moisturizer"]
-      },
-      products: ["Gentle foaming cleanser", "Light moisturizer"]
-    },
-    "16-20": {
-      focus: "Acne prevention and basic care",
-      routine: {
-        morning: ["Cleanser", "Moisturizer", "Sunscreen (SPF 30+)"],
-        night: ["Cleanser", "Treatment (if acne)", "Moisturizer"]
-      },
-      products: ["Gentle cleanser", "Moisturizer", "Sunscreen"]
-    },
-    "21-25": {
-      focus: "Early treatment and prevention",
-      routine: {
-        morning: ["Cleanser", "Vitamin C serum", "Moisturizer", "Sunscreen"],
-        night: ["Cleanser", "Treatment (retinol or exfoliant)", "Moisturizer"]
-      },
-      products: ["Vitamin C serum", "Retinol", "AHA exfoliant"]
-    },
-    "26-35": {
-      focus: "Preventive anti-aging",
-      routine: {
-        morning: ["Cleanser", "Vitamin C", "Moisturizer", "Sunscreen"],
-        night: ["Cleanser", "Retinol", "Moisturizer"]
-      },
-      products: ["Vitamin C serum", "Retinol", "Hyaluronic acid serum"]
-    },
-    "36-50": {
-      focus: "Anti-aging and hydration",
-      routine: {
-        morning: ["Hydrating cleanser", "Vitamin C", "Moisturizer", "Sunscreen"],
-        night: ["Cleanser", "Retinol / peptides", "Rich moisturizer"]
-      },
-      products: ["Retinol", "Peptides", "Rich moisturizer", "Hyaluronic acid"]
-    },
-    "50+": {
-      focus: "Hydration and barrier repair",
-      routine: {
-        morning: ["Hydrating cleanser", "Antioxidant serum", "Rich moisturizer", "Sunscreen"],
-        night: ["Cleanser", "Retinol / peptides", "Night cream"]
-      },
-      products: ["Retinol", "Peptides", "Night cream", "Antioxidant serum"]
+    try {
+      await fetch(`${API}/logout/`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() }
+      });
+    } catch (_) {}
+    finally {
+      localStorage.removeItem('authToken');
+      setLoggedIn(false);
     }
   };
 
-  const skinTypeProducts = {
-    "Oily": ["Gel cleanser", "Oil-free moisturizer", "Matte sunscreen", "Salicylic acid", "Niacinamide"],
-    "Dry": ["Cream cleanser", "Hydrating serum", "Thick moisturizer", "Hyaluronic acid", "Ceramides"],
-    "Combination": ["Gentle cleanser", "Light moisturizer", "Oil control serum", "Sunscreen"],
-    "Sensitive": ["Fragrance-free cleanser", "Barrier moisturizer", "Mineral sunscreen", "Centella asiatica", "Aloe vera"]
-  };
-
-  const concernProducts = {
-    "Acne/Pimples": { products: ["Salicylic acid", "Benzoyl peroxide", "Retinoids"], color: "#ff6b6b" },
-    "Dark Spots": { products: ["Vitamin C", "Niacinamide", "Alpha arbutin", "Retinol"], color: "#ffa502" },
-    "Dull Skin": { products: ["AHA exfoliant", "Vitamin C", "Hydrating serum"], color: "#ffd43b" },
-    "Large Pores": { products: ["Salicylic acid", "Niacinamide", "Retinol"], color: "#a8e6cf" },
-    "Wrinkles/Aging": { products: ["Retinol", "Peptides", "Sunscreen"], color: "#c7b3d5" },
-    "Dryness": { products: ["Hyaluronic acid", "Ceramides", "Thick moisturizer"], color: "#ffb3ba" },
-    "Redness/Irritation": { products: ["Centella asiatica", "Aloe vera", "Barrier cream"], color: "#bae1ff" }
-  };
 
   const questions = [
     {
@@ -595,7 +579,7 @@ User's new question: ${chatInput}`;
     "Don’t pop pimples in a fight, patience will heal them right.",
     "Move your body, exercise a bit, glowing skin will follow it.",
     "Keep your skin hydrated all day, dryness should stay away.",
-    "Love your skin the way it is, confidence is the final bliss. ✨"
+    "Love your skin the way it is, confidence is the final bliss."
   ];
 
   const showRandomTip = () => {
@@ -634,10 +618,28 @@ User's new question: ${chatInput}`;
     });
   };
 
-  const saveRoutine = () => {
-    localStorage.setItem('myRoutine', JSON.stringify(effectiveRoutineRows));
-    setRoutineSaved(true);
-    setTimeout(() => setRoutineSaved(false), 2500);
+  const saveRoutine = async () => {
+    try {
+      const res = await fetch(`${API}/api/skincare_routine/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader()
+        },
+        body: JSON.stringify({
+          routine_data: effectiveRoutineRows
+        })
+      });
+      if (res.ok) {
+        setRoutineSaved(true);
+        setTimeout(() => setRoutineSaved(false), 2500);
+      } else {
+        alert('Error saving routine. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error saving routine:', error);
+      alert('Error saving routine: ' + error.message);
+    }
   };
 
   const addRoutineRow = () => {
@@ -716,6 +718,7 @@ User's new question: ${chatInput}`;
         ingredient: "Niacinamide",
         description: "A serum that helps reduce blemishes, control oil, and improve skin texture."
       },
+      
       {
         name: "La Roche-Posay Hyalu B5 Serum",
         ingredient: "Hyaluronic Acid",
@@ -1024,8 +1027,42 @@ User's new question: ${chatInput}`;
           <div className="sidebar-section">
             <h3>Quick Actions</h3>
             <ul>
-              <li><button className="skincare-btn" onClick={() => { setShowMessages(!showMessages); setSelectedDermatologist(null); setShowAiAssistant(false); }}>Messages</button></li>
-              <li><button className="skincare-btn" onClick={() => { setShowAiAssistant(!showAiAssistant); setShowMessages(false); }}>AI Assistant</button></li>
+              <li>
+                <button
+                  className="skincare-btn"
+                  onClick={() => {
+                    setShowMessages(true);
+                    setShowAiAssistant(false);
+                    setShowDailyTips(false);
+                    setShowSkincare(false);
+                    setShowProfile(false);
+                    setShowProductSuggestions(false);
+                    setShowRoutineGenerator(false);
+                    setSelectedDermatologist(null);
+                    setSelectedCategory(null);
+                  }}
+                >
+                  Messages
+                </button>
+              </li>
+              <li>
+                <button
+                  className="skincare-btn"
+                  onClick={() => {
+                    setShowAiAssistant(true);
+                    setShowMessages(false);
+                    setShowDailyTips(false);
+                    setShowSkincare(false);
+                    setShowProfile(false);
+                    setShowProductSuggestions(false);
+                    setShowRoutineGenerator(false);
+                    setSelectedDermatologist(null);
+                    setSelectedCategory(null);
+                  }}
+                >
+                  AI Assistant
+                </button>
+              </li>
               <li>
                 <button
                   className="skincare-btn"
@@ -1078,13 +1115,42 @@ User's new question: ${chatInput}`;
                   My Routine
                 </button>
               </li>
-              <li><button 
-                className="skincare-btn" 
-                onClick={() => setShowSkincare(!showSkincare)}
-              >
-                My Skincare
-              </button></li>
-              <li><button className="skincare-btn" onClick={() => setShowProfile(!showProfile)}>My Profile</button></li>
+              <li>
+                <button
+                  className="skincare-btn"
+                  onClick={() => {
+                    setShowSkincare(true);
+                    setShowProfile(false);
+                    setShowMessages(false);
+                    setShowAiAssistant(false);
+                    setShowDailyTips(false);
+                    setShowProductSuggestions(false);
+                    setShowRoutineGenerator(false);
+                    setSelectedDermatologist(null);
+                    setSelectedCategory(null);
+                  }}
+                >
+                  My Skincare
+                </button>
+              </li>
+              <li>
+                <button
+                  className="skincare-btn"
+                  onClick={() => {
+                    setShowProfile(true);
+                    setShowSkincare(false);
+                    setShowMessages(false);
+                    setShowAiAssistant(false);
+                    setShowDailyTips(false);
+                    setShowProductSuggestions(false);
+                    setShowRoutineGenerator(false);
+                    setSelectedDermatologist(null);
+                    setSelectedCategory(null);
+                  }}
+                >
+                  My Profile
+                </button>
+              </li>
             </ul>
           </div>
         </aside>
@@ -1141,8 +1207,8 @@ User's new question: ${chatInput}`;
             <main className="chat-area">
               <div className="chat-header-section">
                 <button className="back-btn" onClick={() => { setSelectedDermatologist(null); setConversationMessages([]); setMessage(""); }}>← Back</button>
-                <h3>Chat with Dr. {selectedDermatologist.name}</h3>
-                <p>📧 {selectedDermatologist.email}</p>
+                <h3>Chat with Dr. {formatDoctorName(selectedDermatologist.name)}</h3>
+                <p>Email: {selectedDermatologist.email}</p>
               </div>
 
               <div className="messages-container">
@@ -1156,7 +1222,7 @@ User's new question: ${chatInput}`;
                     return (
                       <div key={i} className={isMine ? 'chat-msg chat-msg-sent' : 'chat-msg chat-msg-received'}>
                         <div className="chat-msg-sender">
-                          {!isMine && (msg.username || `Dr. ${selectedDermatologist.name}`)}
+                          {!isMine && (msg.username || `Dr. ${formatDoctorName(selectedDermatologist.name)}`)}
                         </div>
                         <div className="chat-msg-text">{msg.message}</div>
                         <span className="chat-msg-time">{msg.timestamp}</span>
@@ -1205,7 +1271,7 @@ User's new question: ${chatInput}`;
                   dermatologists.map((doc, i) => (
                     <div key={i} className="dermatologist-card" onClick={() => { setConversationMessages([]); setMessage(""); setSelectedDermatologist(doc); }}>
                       <div className="doc-header">
-                        <h4>Dr. {doc.name}</h4>
+                        <h4>Dr. {formatDoctorName(doc.name || doc.email)}</h4>
                       </div>
                       <div className="doc-info">
                         <p><strong>Email:</strong> {doc.email}</p>
@@ -1432,21 +1498,6 @@ User's new question: ${chatInput}`;
             )}
           </main>
         )}
-
-        {/* Right Panel */}
-        <aside className="right-panel">
-          {showAiAssistant ? (
-            <div className="panel-card">
-              <h4>📋 AI Features</h4>
-              <p>Ask any skincare question and get instant AI-powered advice customized for your skin profile!</p>
-            </div>
-          ) : (
-            <div className="panel-card">
-              <h4>Quick Tips</h4>
-              <p>Use the AI Skincare Assistant for personalized advice.</p>
-            </div>
-          )}
-        </aside>
       </div>
     </div>
   );

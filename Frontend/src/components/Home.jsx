@@ -58,33 +58,33 @@ function Home({ setCurrentPage }) {
         <div className="features-grid">
           <div className="feature-card">
             <div className="feature-icon"></div>
-            <h3>Expert Professionals</h3>
-            <p>Connect with certified dermatologists and skincare experts who understand your unique skin needs.</p>
+            <h3>Personalized Skin Advice</h3>
+            <p>Recommendations tailored to your skin type and concerns.</p>
           </div>
           <div className="feature-card">
             <div className="feature-icon"></div>
-            <h3>Personalized Routines</h3>
-            <p>Get customized skincare routines designed specifically for your skin type and concerns.</p>
+            <h3>Expert Guidance</h3>
+            <p>Advice informed and approved by dermatology professionals.</p>
           </div>
           <div className="feature-card">
             <div className="feature-icon"></div>
-            <h3>Direct Communication</h3>
-            <p>Chat directly with professionals and get answers to all your skincare questions instantly.</p>
+            <h3>Product Recommendations</h3>
+            <p>Curated skincare products suited for your skin.</p>
           </div>
           <div className="feature-card">
             <div className="feature-icon"></div>
-            <h3>Progress Tracking</h3>
-            <p>Track your skin's progress with detailed recommendations and follow-up guidance.</p>
+            <h3>Quick Tips & Tricks</h3>
+            <p>Short, actionable advice for better skin care.</p>
           </div>
           <div className="feature-card">
             <div className="feature-icon"></div>
-            <h3>Science-Based Treatment</h3>
-            <p>All recommendations are based on dermatological science and proven skincare practices.</p>
+            <h3>Chat Directly with a Doctor</h3>
+            <p>Get professional guidance from certified dermatologists anytime.</p>
           </div>
           <div className="feature-card">
             <div className="feature-icon"></div>
-            <h3>Privacy First</h3>
-            <p>Your skin concerns are personal. We keep all your information secure and confidential.</p>
+            <h3>Routine Setter</h3>
+            <p>Set your skincare routine for easy tracking and consistency.</p>
           </div>
         </div>
       </section>
@@ -95,57 +95,51 @@ function Home({ setCurrentPage }) {
         <div className="steps-container">
           <div className="step">
             <div className="step-number">1</div>
-            <h3>Create Your Profile</h3>
-            <p>Sign up and tell us about your skin type, concerns, and goals.</p>
+            <h3>Tell Us About Your Skin</h3>
+            <p>Share your skin type, concerns, and goals.</p>
           </div>
           <div className="step-divider"></div>
           <div className="step">
             <div className="step-number">2</div>
-            <h3>Connect with Professionals</h3>
-            <p>Get paired with skincare experts who specialize in your specific concerns.</p>
+            <h3>Get Your Personalized Routine</h3>
+            <p>Morning, night, and everything in between.</p>
           </div>
           <div className="step-divider"></div>
           <div className="step">
             <div className="step-number">3</div>
-            <h3>Receive Custom Routine</h3>
-            <p>Get a personalized skincare routine tailored to your unique needs.</p>
-          </div>
-          <div className="step-divider"></div>
-          <div className="step">
-            <div className="step-number">4</div>
-            <h3>Chat & Support</h3>
-            <p>Chat with professionals anytime for advice, questions, or adjustments.</p>
+            <h3>Track & Chat Anytime</h3>
+            <p>Monitor progress and ask questions whenever you need.</p>
           </div>
         </div>
       </section>
 
-      {/* Services Section */}
+      {/* Key Features Section */}
       <section className="services">
-        <h2>Our Services</h2>
+        <h2>Key Features</h2>
         <div className="services-grid">
           <div className="service-item">
-            <h3>Skincare Consultation</h3>
-            <p>Expert consultation to identify your skin type and specific concerns.</p>
+            <h3>Personalized Routines</h3>
+            <p>Skincare plans created specifically for your skin type, concerns, and goals.</p>
           </div>
           <div className="service-item">
-            <h3>Routine Creation</h3>
-            <p>Customized daily skincare routines for morning and evening.</p>
+            <h3>Expert Advice</h3>
+            <p>Connect with certified dermatologists for professional guidance anytime.</p>
           </div>
           <div className="service-item">
-            <h3>Education & Tips</h3>
-            <p>Learn about skincare ingredients, techniques, and best practices.</p>
+            <h3>Product Suggestions</h3>
+            <p>Curated products that suit your skin and lifestyle.</p>
           </div>
           <div className="service-item">
-            <h3>Product Recommendations</h3>
-            <p>Get personalized product suggestions that work for your skin.</p>
+            <h3>Daily Tips & Tricks</h3>
+            <p>Quick, actionable advice to keep your skin healthy and glowing.</p>
           </div>
           <div className="service-item">
-            <h3>24/7 Chat Support</h3>
-            <p>Access professional advice anytime through our chat system.</p>
+            <h3>AI Assistant Support</h3>
+            <p>Get instant answers to skincare questions anytime.</p>
           </div>
           <div className="service-item">
-            <h3>Progress Monitoring</h3>
-            <p>Regular check-ins to monitor improvement and adjust routines.</p>
+            <h3>Progress Tracking</h3>
+            <p>Monitor your skin’s improvement and adjust routines for the best results.</p>
           </div>
         </div>
       </section>

@@ -1,7 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-
 :root {
-  --font-sans: 'Roboto', 'Arial', 'Helvetica', sans-serif;
+  --font-sans: Arial, 'Times New Roman', serif, sans-serif;
   --font-serif: 'Times New Roman', Times, serif;
 }
 
@@ -27,8 +25,7 @@ body {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: Arial, 'Times New Roman', serif, sans-serif;
 }
 
 .auth-notice {

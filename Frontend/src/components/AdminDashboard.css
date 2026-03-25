@@ -2,7 +2,7 @@
   min-height: 100vh;
   background: #f8fafc;
   padding: 2rem;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: Arial, 'Times New Roman', serif, sans-serif;
 }
 
 .admin-header {
@@ -93,6 +93,26 @@
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+}
+
+.admin-doc-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  min-width: 160px;
+}
+
+.admin-doc-image {
+  width: 160px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
 }
 
 .admin-docs a {

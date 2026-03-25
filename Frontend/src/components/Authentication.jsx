@@ -7,6 +7,7 @@ function Authentication({ setLoggedIn, setCurrentPage, setUserRole, setUserEmail
   const [isLogin, setIsLogin] = useState(initialMode !== 'signup');
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [role, setRole] = useState("customer");
@@ -20,7 +21,7 @@ function Authentication({ setLoggedIn, setCurrentPage, setUserRole, setUserEmail
     setError("");
     setLoading(true);
 
-    if (!name || !email || !address || !password || !role) {
+    if (!name || !email || !address || !password || !confirmPassword || !role) {
       setError("All fields are required");
       setLoading(false);
       return;
@@ -34,6 +35,12 @@ function Authentication({ setLoggedIn, setCurrentPage, setUserRole, setUserEmail
 
     if (password.length < 6) {
       setError("Password must be at least 6 characters");
+      setLoading(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
       setLoading(false);
       return;
     }
@@ -89,6 +96,7 @@ function Authentication({ setLoggedIn, setCurrentPage, setUserRole, setUserEmail
         setEmail("");
         setAddress("");
         setPassword("");
+        setConfirmPassword("");
         setNmcCertificate(null);
         setPanCard(null);
         setPartnerPanCard(null);
@@ -339,6 +347,20 @@ function Authentication({ setLoggedIn, setCurrentPage, setUserRole, setUserEmail
           />
         </div>
 
+        {/* Confirm Password Input - Registration Only */}
+        {!isLogin && (
+          <div className="form-group">
+            <label>Confirm Password</label>
+            <input
+              type="password"
+              placeholder="Re-enter your password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="form-input"
+            />
+          </div>
+        )}
+
         {/* Submit Button */}
         <button 
           className={`btn-submit ${loading ? 'loading' : ''}`}
@@ -360,6 +382,7 @@ function Authentication({ setLoggedIn, setCurrentPage, setUserRole, setUserEmail
                 setEmail("");
                 setAddress("");
                 setPassword("");
+                setConfirmPassword("");
                 setError("");
                 setRole("customer");
                 setNmcCertificate(null);

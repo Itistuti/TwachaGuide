@@ -55,4 +55,14 @@ class PartnershipRequest(models.Model):
 
     def __str__(self):
         return f"{self.company_name} - {self.email}"
+
+
+class SkinCareRoutine(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='skincare_routine')
+    routine_data = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Routine for {self.user.email}"
     

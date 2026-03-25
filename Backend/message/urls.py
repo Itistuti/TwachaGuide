@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/chat_history/', views.api_get_chat_history, name='chat_history'),
     path('api/patients/', views.api_get_patients, name='get_patients'),
     path('api/partnership/', views.api_partnership, name='api_partnership'),
+    path('api/skincare_routine/', views.api_skincare_routine, name='skincare_routine'),
     path('api/admin/users/', views.api_admin_users, name='admin_users'),
     path('api/admin/dermatologists/', views.api_admin_dermatologist_queue, name='admin_derm_queue'),
     path('api/admin/dermatologists/<int:user_id>/status/', views.api_admin_set_dermatologist_status, name='admin_derm_status'),

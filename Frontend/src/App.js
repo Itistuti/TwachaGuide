@@ -67,8 +67,15 @@ function App() {
         clearAuth();
       }
     } catch (error) {
-      console.error("Session verification failed:", error);
-      clearAuth();
+      // AbortError = timeout; generic network error = backend down.
+      // In both cases the token may still be valid — only show the login
+      // page, do NOT wipe the stored token so a fresh login works instantly.
+      if (error.name !== 'AbortError') {
+        console.error("Session verification failed:", error);
+      }
+      // Don't call clearAuth() here — only a server-side rejection (else
+      // branch above) means the token is genuinely invalid.
+      localStorage.removeItem('loggedIn');
     } finally {
       setLoading(false);
     }

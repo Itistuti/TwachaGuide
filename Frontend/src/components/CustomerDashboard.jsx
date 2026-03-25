@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import "./CustomerDashboard.css";
 
 const API = "http://127.0.0.1:8000";
-const OPENROUTER_API_KEY = process.env.REACT_APP_OPENROUTER_API_KEY || "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";
+const OPENROUTER_API_KEY = process.env.REACT_APP_OPENROUTER_API_KEY;
 const MODEL = "nvidia/nemotron-3-nano-30b-a3b:free";
 
 function CustomerDashboard({ setLoggedIn, userEmail }) {
@@ -525,6 +525,10 @@ function CustomerDashboard({ setLoggedIn, userEmail }) {
   };
 
   const generateRecommendations = async (answers) => {
+    if (!OPENROUTER_API_KEY) {
+      throw new Error('API key not configured. Please add REACT_APP_OPENROUTER_API_KEY to your .env file and restart the app.');
+    }
+
     const prompt = `Based on the following user skincare profile, provide personalized skincare recommendations. Include daily routine suggestions, product recommendations, and tips. Keep it concise but comprehensive.
 
 User Profile:
@@ -566,6 +570,11 @@ Provide recommendations in a structured format with sections for Morning Routine
   const sendChatMessage = async () => {
     if (chatInput.trim() === '') return;
 
+    if (!OPENROUTER_API_KEY) {
+      alert('API key not configured. Please add REACT_APP_OPENROUTER_API_KEY to your .env file and restart the app.');
+      return;
+    }
+
     const userMessage = { role: 'user', content: chatInput };
     const newMessages = [...chatMessages, userMessage];
     setChatMessages(newMessages);
@@ -604,16 +613,18 @@ User's new question: ${chatInput}`;
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to get response');
+        console.error('OpenRouter API error:', data);
+        throw new Error(data.error?.message || `API error: ${response.status}`);
       }
 
-      const data = await response.json();
       const aiMessage = { role: 'assistant', content: data.choices[0].message.content };
       setChatMessages([...newMessages, aiMessage]);
     } catch (error) {
       console.error('Error sending chat message:', error);
-      alert('Failed to send message. Please try again.');
+      alert(`Failed to send message: ${error.message}`);
     } finally {
       setChatLoading(false);
     }

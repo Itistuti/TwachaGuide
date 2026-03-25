@@ -215,6 +215,7 @@ function AdminDashboard({ setLoggedIn, userEmail }) {
                   <div className="admin-doc-item">
                     <span>Product Suggestion: {item.product_suggestion}</span>
                   </div>
+                  {renderDocumentPreview('Product Picture', item.product_picture)}
                   {renderDocumentPreview('Partner PAN Card', item.partner_pan_card)}
                 </div>
                 <div className="admin-actions">

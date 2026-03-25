@@ -156,6 +156,40 @@ def api_get_profile(request):
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 
+
+# Change password for authenticated user
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def api_change_password(request):
+    try:
+        current_password = request.data.get('current_password')
+        new_password = request.data.get('new_password')
+
+        if not current_password or not new_password:
+            return Response({'error': 'Current password and new password are required'}, status=400)
+
+        if len(new_password) < 8:
+            return Response({'error': 'New password must be at least 8 characters long'}, status=400)
+
+        user = request.user
+        if not user.check_password(current_password):
+            return Response({'error': 'Current password is incorrect'}, status=400)
+
+        if current_password == new_password:
+            return Response({'error': 'New password must be different from current password'}, status=400)
+
+        user.set_password(new_password)
+        user.save()
+
+        # Invalidate existing token and return a fresh one.
+        Token.objects.filter(user=user).delete()
+        token = Token.objects.create(user=user)
+
+        return Response({'message': 'Password updated successfully', 'token': token.key}, status=200)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
 # -----------------
 # Admin: list all users
 # -----------------
@@ -267,6 +301,8 @@ def api_admin_partnership_queue(request):
         except UserProfile.DoesNotExist:
             partner_pan_card = None
 
+        product_picture = full_url(pr.product_picture) if pr.product_picture else None
+
         data.append({
             'id': pr.id,
             'user_email': pr.user.email,
@@ -278,6 +314,7 @@ def api_admin_partnership_queue(request):
             'product_suggestion': pr.product_suggestion,
             'status': pr.status,
             'partner_pan_card': partner_pan_card,
+            'product_picture': product_picture,
             'created_at': pr.created_at.strftime('%Y-%m-%d %H:%M')
         })
 
@@ -544,6 +581,7 @@ def api_partnership(request):
         email = request.data.get('email')
         description = request.data.get('description')
         product_suggestion = request.data.get('productSuggestion')
+        product_picture = request.FILES.get('productPicture')
 
         if not all([company_name, address, contact_number, email, description, product_suggestion]):
             return Response({'error': 'All fields are required'}, status=400)
@@ -556,9 +594,34 @@ def api_partnership(request):
             email=email,
             description=description,
             product_suggestion=product_suggestion,
+            product_picture=product_picture,
             status='pending'
         )
         return Response({'message': 'Partnership request submitted successfully'}, status=201)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+# -----------------
+# Get user's partnership requests
+# -----------------
+@csrf_exempt
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def api_get_partnership_requests(request):
+    """Get all partnership requests for the authenticated user"""
+    try:
+        partnership_requests = PartnershipRequest.objects.filter(user=request.user).order_by('-created_at')
+        
+        data = [{
+            'id': pr.id,
+            'company_name': pr.company_name,
+            'email': pr.email,
+            'status': pr.status,
+            'created_at': pr.created_at.strftime('%Y-%m-%d %H:%M'),
+        } for pr in partnership_requests]
+        
+        return Response({'partnership_requests': data}, status=200)
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 

@@ -12,18 +12,51 @@ function PartnershipDashboard({ setLoggedIn, userEmail }) {
     description: "",
     productSuggestion: "",
   });
+  const [productPicture, setProductPicture] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [partnershipRequests, setPartnershipRequests] = useState([]);
+  const [showApplicationStatus, setShowApplicationStatus] = useState(false);
 
   const getAuthHeader = () => {
     const token = localStorage.getItem("authToken");
     return token ? { Authorization: `Token ${token}` } : {};
   };
 
+  const loadPartnershipRequests = async () => {
+    try {
+      const res = await fetch(`${API}/api/partnership-requests/`, {
+        headers: { "Content-Type": "application/json", ...getAuthHeader() },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPartnershipRequests(data.partnership_requests || []);
+      }
+    } catch (err) {
+      console.error("Error loading partnership requests:", err);
+    }
+  };
+
+  React.useEffect(() => {
+    loadPartnershipRequests();
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("File size must not exceed 5MB.");
+        return;
+      }
+      setProductPicture(file);
+      setError("");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -44,18 +77,29 @@ function PartnershipDashboard({ setLoggedIn, userEmail }) {
 
     setLoading(true);
     try {
+      const submitData = new FormData();
+      submitData.append("companyName", formData.companyName);
+      submitData.append("address", formData.address);
+      submitData.append("contactNumber", formData.contactNumber);
+      submitData.append("email", formData.email);
+      submitData.append("description", formData.description);
+      submitData.append("productSuggestion", formData.productSuggestion);
+      if (productPicture) {
+        submitData.append("productPicture", productPicture);
+      }
+
       const res = await fetch(`${API}/api/partnership/`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           ...getAuthHeader(),
         },
         credentials: "include",
-        body: JSON.stringify(formData),
+        body: submitData,
       });
 
       if (res.ok) {
         setSubmitted(true);
+        await loadPartnershipRequests();
       } else {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Failed to submit. Please try again.");
@@ -91,6 +135,12 @@ function PartnershipDashboard({ setLoggedIn, userEmail }) {
             <span className="partnership-logo-text">TwachaGuide Partnership</span>
           </div>
           <div className="partnership-header-right">
+            <button
+              className="application-status-btn"
+              onClick={() => setShowApplicationStatus(!showApplicationStatus)}
+            >
+              Application Status
+            </button>
             <span className="partnership-user-email">{userEmail}</span>
             <button className="partnership-logout-btn" onClick={logout}>
               Logout
@@ -101,7 +151,41 @@ function PartnershipDashboard({ setLoggedIn, userEmail }) {
 
       {/* Main Content */}
       <main className="partnership-main">
-        {submitted ? (
+        {showApplicationStatus ? (
+          <div className="partnership-status-card">
+            <div className="status-card-header">
+              <h2>Application Status</h2>
+              <button
+                className="close-status-btn"
+                onClick={() => setShowApplicationStatus(false)}
+              >
+                ✕
+              </button>
+            </div>
+            {partnershipRequests.length === 0 ? (
+              <p className="no-applications">No partnership applications submitted yet.</p>
+            ) : (
+              <div className="applications-list">
+                {partnershipRequests.map((req) => (
+                  <div key={req.id} className={`application-item status-${req.status}`}>
+                    <div className="application-info">
+                      <h4>{req.company_name}</h4>
+                      <p className="app-email">{req.email}</p>
+                      <p className="app-date">Submitted: {req.created_at}</p>
+                    </div>
+                    <div className="application-status">
+                      <span className={`status-badge status-${req.status}`}>
+                        {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            {submitted ? (
           <div className="partnership-success-card">
             <h2>Thank You!</h2>
             <p>
@@ -120,6 +204,7 @@ function PartnershipDashboard({ setLoggedIn, userEmail }) {
                   description: "",
                   productSuggestion: "",
                 });
+                setProductPicture(null);
               }}
             >
               Submit Another Request
@@ -219,6 +304,19 @@ function PartnershipDashboard({ setLoggedIn, userEmail }) {
                 />
               </div>
 
+              <div className="partnership-form-group">
+                <label htmlFor="productPicture">Product Picture</label>
+                <input
+                  type="file"
+                  id="productPicture"
+                  name="productPicture"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="partnership-input"
+                />
+                
+              </div>
+
               <button
                 type="submit"
                 className={`partnership-submit-btn ${loading ? "loading" : ""}`}
@@ -228,6 +326,8 @@ function PartnershipDashboard({ setLoggedIn, userEmail }) {
               </button>
             </form>
           </div>
+            )}
+          </>
         )}
       </main>
     </div>

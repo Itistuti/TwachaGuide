@@ -15,6 +15,13 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
   const [showInbox, setShowInbox] = useState(true);
   const [showProfile, setShowProfile] = useState(false);
   const [doctorProfile, setDoctorProfile] = useState(null);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
+  const [passwordStatus, setPasswordStatus] = useState({ type: "", message: "" });
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   const pollRef = useRef(null);
   const selectedPatientRef = useRef(null);
@@ -202,6 +209,59 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
     }
   };
 
+  const handlePasswordFieldChange = (field, value) => {
+    setPasswordForm((prev) => ({ ...prev, [field]: value }));
+    if (passwordStatus.message) {
+      setPasswordStatus({ type: "", message: "" });
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordStatus({ type: "error", message: "Please fill in all password fields." });
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordStatus({ type: "error", message: "New password must be at least 8 characters." });
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordStatus({ type: "error", message: "New password and confirm password do not match." });
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const res = await fetch(`${API}/change-password/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeader() },
+        body: JSON.stringify({
+          current_password: passwordForm.currentPassword,
+          new_password: passwordForm.newPassword
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        if (data.token) {
+          localStorage.setItem("authToken", data.token);
+        }
+        setPasswordStatus({ type: "success", message: "Password updated successfully." });
+        setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      } else {
+        setPasswordStatus({ type: "error", message: data.error || "Unable to update password." });
+      }
+    } catch (error) {
+      setPasswordStatus({ type: "error", message: "Unable to update password. Please try again." });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -372,27 +432,63 @@ function DermatologistDashboard({ setLoggedIn, userEmail }) {
               </div>
               <div className="profile-content">
                 {doctorProfile ? (
-                  <div className="doctor-profile-card">
-                    <div className="profile-avatar">{(doctorProfile.name || doctorProfile.email)[0].toUpperCase()}</div>
-                    <h3 className="profile-name">Dr. {doctorProfile.name || doctorProfile.email.split('@')[0]}</h3>
-                    <span className="profile-role">Dermatologist</span>
-                    <div className="profile-details-list">
-                      <div className="detail-row">
-                        <span className="detail-label">Email</span>
-                        <span className="detail-value">{doctorProfile.email}</span>
+                  <div className="profile-wrapper">
+                    <div className="doctor-profile-card">
+                      <div className="profile-avatar">{(doctorProfile.name || doctorProfile.email)[0].toUpperCase()}</div>
+                      <h3 className="profile-name">Dr. {doctorProfile.name || doctorProfile.email.split('@')[0]}</h3>
+                      <span className="profile-role">Dermatologist</span>
+                      <div className="profile-details-list">
+                        <div className="detail-row">
+                          <span className="detail-label">Email</span>
+                          <span className="detail-value">{doctorProfile.email}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Name</span>
+                          <span className="detail-value">{doctorProfile.name || 'Not provided'}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Address</span>
+                          <span className="detail-value">{doctorProfile.address || 'Not provided'}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Total Patients</span>
+                          <span className="detail-value">{patients.length}</span>
+                        </div>
                       </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Name</span>
-                        <span className="detail-value">{doctorProfile.name || 'Not provided'}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Address</span>
-                        <span className="detail-value">{doctorProfile.address || 'Not provided'}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Total Patients</span>
-                        <span className="detail-value">{patients.length}</span>
-                      </div>
+                    </div>
+                    <div className="password-card">
+                      <h4>Change Password</h4>
+                      <form className="password-form" onSubmit={handleChangePassword}>
+                        <input
+                          type="password"
+                          className="password-input"
+                          placeholder="Current password"
+                          value={passwordForm.currentPassword}
+                          onChange={(e) => handlePasswordFieldChange("currentPassword", e.target.value)}
+                        />
+                        <input
+                          type="password"
+                          className="password-input"
+                          placeholder="New password"
+                          value={passwordForm.newPassword}
+                          onChange={(e) => handlePasswordFieldChange("newPassword", e.target.value)}
+                        />
+                        <input
+                          type="password"
+                          className="password-input"
+                          placeholder="Confirm new password"
+                          value={passwordForm.confirmPassword}
+                          onChange={(e) => handlePasswordFieldChange("confirmPassword", e.target.value)}
+                        />
+                        {passwordStatus.message && (
+                          <p className={`password-status ${passwordStatus.type === "success" ? "ok" : "error"}`}>
+                            {passwordStatus.message}
+                          </p>
+                        )}
+                        <button type="submit" className="password-btn" disabled={passwordLoading}>
+                          {passwordLoading ? "Updating..." : "Update Password"}
+                        </button>
+                      </form>
                     </div>
                   </div>
                 ) : (

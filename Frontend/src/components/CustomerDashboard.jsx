@@ -31,6 +31,13 @@ function CustomerDashboard({ setLoggedIn, userEmail }) {
   const [showAiAssistant, setShowAiAssistant] = useState(false);
   const [funTip, setFunTip] = useState("");
   const [incomingConversations, setIncomingConversations] = useState([]);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
+  const [passwordStatus, setPasswordStatus] = useState({ type: "", message: "" });
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   const formatDoctorName = (nameOrEmail) => {
     const value = (nameOrEmail || '').toString().trim();
@@ -108,6 +115,59 @@ function CustomerDashboard({ setLoggedIn, userEmail }) {
       }
     } catch (error) {
       console.error("Error loading profile:", error);
+    }
+  };
+
+  const handlePasswordFieldChange = (field, value) => {
+    setPasswordForm((prev) => ({ ...prev, [field]: value }));
+    if (passwordStatus.message) {
+      setPasswordStatus({ type: "", message: "" });
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordStatus({ type: "error", message: "Please fill in all password fields." });
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordStatus({ type: "error", message: "New password must be at least 8 characters." });
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordStatus({ type: "error", message: "New password and confirm password do not match." });
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const res = await fetch(`${API}/change-password/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeader() },
+        body: JSON.stringify({
+          current_password: passwordForm.currentPassword,
+          new_password: passwordForm.newPassword
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        if (data.token) {
+          localStorage.setItem("authToken", data.token);
+        }
+        setPasswordStatus({ type: "success", message: "Password updated successfully." });
+        setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      } else {
+        setPasswordStatus({ type: "error", message: data.error || "Unable to update password." });
+      }
+    } catch (error) {
+      setPasswordStatus({ type: "error", message: "Unable to update password. Please try again." });
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -1166,7 +1226,6 @@ User's new question: ${chatInput}`;
             <div className="messages-container">
               {chatMessages.length === 0 ? (
                 <div className="no-messages">
-                  <p>Start by asking a skincare question! The AI will provide personalized advice based on your profile.</p>
                 </div>
               ) : (
                 chatMessages.map((msg, i) => (
@@ -1445,27 +1504,64 @@ User's new question: ${chatInput}`;
             <div className="profile-container">
               <h3>My Profile</h3>
               {userProfile ? (
-                <div className="profile-details">
-                  <div className="profile-item">
-                    <strong>Email:</strong>
-                    <span>{userProfile.email}</span>
-                  </div>
-                  <div className="profile-item">
-                    <strong>Role:</strong>
-                    <span>{userProfile.role === 'customer' ? 'Customer' : 'Dermatologist'}</span>
-                  </div>
-                  {userProfile.name && (
+                <div className="profile-wrapper">
+                  <div className="profile-details">
                     <div className="profile-item">
-                      <strong>Name:</strong>
-                      <span>{userProfile.name}</span>
+                      <strong>Email:</strong>
+                      <span>{userProfile.email}</span>
                     </div>
-                  )}
-                  {userProfile.address && (
                     <div className="profile-item">
-                      <strong>Address:</strong>
-                      <span>{userProfile.address}</span>
+                      <strong>Role:</strong>
+                      <span>{userProfile.role === 'customer' ? 'Customer' : 'Dermatologist'}</span>
                     </div>
-                  )}
+                    {userProfile.name && (
+                      <div className="profile-item">
+                        <strong>Name:</strong>
+                        <span>{userProfile.name}</span>
+                      </div>
+                    )}
+                    {userProfile.address && (
+                      <div className="profile-item">
+                        <strong>Address:</strong>
+                        <span>{userProfile.address}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="password-card">
+                    <h4>Change Password</h4>
+                    <form className="password-form" onSubmit={handleChangePassword}>
+                      <input
+                        type="password"
+                        className="password-input"
+                        placeholder="Current password"
+                        value={passwordForm.currentPassword}
+                        onChange={(e) => handlePasswordFieldChange("currentPassword", e.target.value)}
+                      />
+                      <input
+                        type="password"
+                        className="password-input"
+                        placeholder="New password"
+                        value={passwordForm.newPassword}
+                        onChange={(e) => handlePasswordFieldChange("newPassword", e.target.value)}
+                      />
+                      <input
+                        type="password"
+                        className="password-input"
+                        placeholder="Confirm new password"
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => handlePasswordFieldChange("confirmPassword", e.target.value)}
+                      />
+                      {passwordStatus.message && (
+                        <p className={`password-status ${passwordStatus.type === "success" ? "ok" : "error"}`}>
+                          {passwordStatus.message}
+                        </p>
+                      )}
+                      <button type="submit" className="password-btn" disabled={passwordLoading}>
+                        {passwordLoading ? "Updating..." : "Update Password"}
+                      </button>
+                    </form>
+                  </div>
                 </div>
               ) : (
                 <p>Loading profile...</p>

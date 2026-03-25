@@ -50,6 +50,7 @@ class PartnershipRequest(models.Model):
     email = models.EmailField()
     description = models.TextField()
     product_suggestion = models.TextField()
+    product_picture = models.FileField(upload_to='partnership_products/', null=True, blank=True)
     status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('approved', 'Approved'), ('rejected', 'Rejected')], default='pending')
     created_at = models.DateTimeField(default=timezone.now)
 

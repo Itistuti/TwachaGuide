@@ -30,6 +30,9 @@ function CustomerDashboard({ setLoggedIn, userEmail }) {
   const [conversationMessages, setConversationMessages] = useState([]);
   const [showAiAssistant, setShowAiAssistant] = useState(false);
   const [funTip, setFunTip] = useState("");
+  const [wheelRotation, setWheelRotation] = useState(0);
+  const [wheelWinner, setWheelWinner] = useState(null);
+  const [showWheelPopup, setShowWheelPopup] = useState(false);
   const [incomingConversations, setIncomingConversations] = useState([]);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -664,6 +667,30 @@ User's new question: ${chatInput}`;
       nextTip = funTips[Math.floor(Math.random() * funTips.length)];
     }
     setFunTip(nextTip);
+  };
+
+  // Wheel options - 6 slices with short labels for display
+  const wheelOptions = [
+    ["Wash Face", "Morning & Night"],
+    ["Wear", "Sunscreen"],
+    ["Stay", "Hydrated"],
+    ["Sleep", "Well"],
+    ["Eat", "Healthy"],
+    ["Love Your", "Skin"]
+  ];
+
+  const spinWheel = () => {
+    const randomIndex = Math.floor(Math.random() * funTips.length);
+    const sliceAngle = 360 / wheelOptions.length;
+    const wheelIndex = randomIndex % wheelOptions.length;
+    const spinAngle = 360 * 6 + wheelIndex * sliceAngle;
+
+    setWheelRotation(prev => prev + spinAngle);
+
+    setTimeout(() => {
+      setWheelWinner(funTips[randomIndex]);
+      setShowWheelPopup(true);
+    }, 4000);
   };
 
   const getDefaultRoutineRows = () => (
@@ -1591,15 +1618,43 @@ User's new question: ${chatInput}`;
             {showDailyTips && (
               <div className="messages-container daily-tips-container">
                 <div className="daily-tips-panel">
-                  <p className="daily-tips-cta">Discover a mini skin treat in one tap!</p>
-                  <div className="daily-tips-action">
-                    <button className="daily-tips-btn" onClick={showRandomTip}>
-                      Click here for fun tips
-                    </button>
+                  <h2 className="wheel-title">Try Your Skin Care Spin Wheel</h2>
+
+                  <div className="wheel-wrapper">
+                    <div className="wheel-arrow"></div>
+                    <div
+                      className="spin-wheel"
+                      style={{ transform: `rotate(${wheelRotation}deg)` }}
+                    >
+                      <div className="wheel-center-hub">
+                        <span className="wheel-center-text">TwachaGuide</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="daily-tips-tip">
-                    {funTip ? funTip : "Your tip will appear here."}
-                  </div>
+
+                  <button
+                    className="spin-button"
+                    onClick={spinWheel}
+                  >
+                    Spin Wheel
+                  </button>
+
+                  {showWheelPopup && wheelWinner && (
+                    <div className="wheel-overlay">
+                      <div className="wheel-popup">
+                        <div className="wheel-popup-title">You know what?</div>
+                        <div className="wheel-popup-quote">
+                          {wheelWinner}
+                        </div>
+                        <button
+                          className="wheel-close-btn"
+                          onClick={() => setShowWheelPopup(false)}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

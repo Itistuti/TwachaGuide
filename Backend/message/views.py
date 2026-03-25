@@ -8,7 +8,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-from .models import ChatMessage, UserProfile, PartnershipRequest, SkinCareRoutine
+from .models import ChatMessage, UserProfile, PartnershipRequest, SkinCareRoutine, SuggestedProduct
 
 ADMIN_EMAIL = 'admin@gmail.com'
 ADMIN_PASSWORD = 'admin123'
@@ -312,6 +312,7 @@ def api_admin_partnership_queue(request):
             'email': pr.email,
             'description': pr.description,
             'product_suggestion': pr.product_suggestion,
+            'about_suggested_product': pr.about_suggested_product,
             'status': pr.status,
             'partner_pan_card': partner_pan_card,
             'product_picture': product_picture,
@@ -603,6 +604,7 @@ def api_partnership(request):
         email = request.data.get('email')
         description = request.data.get('description')
         product_suggestion = request.data.get('productSuggestion')
+        about_suggested_product = request.data.get('aboutSuggestedProduct', '')
         product_picture = request.FILES.get('productPicture')
 
         if not all([company_name, address, contact_number, email, description, product_suggestion]):
@@ -616,6 +618,7 @@ def api_partnership(request):
             email=email,
             description=description,
             product_suggestion=product_suggestion,
+            about_suggested_product=about_suggested_product,
             product_picture=product_picture,
             status='pending'
         )
@@ -687,7 +690,117 @@ def api_skincare_routine(request):
             from .serializers import SkinCareRoutineSerializer
             serializer = SkinCareRoutineSerializer(routine)
             return Response(serializer.data, status=201 if created else 200)
-    
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+# -----------------
+# Suggested Products API
+# -----------------
+@csrf_exempt
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def api_suggested_products(request):
+    """Get all suggested products for the authenticated partner or create a new one"""
+    try:
+        if request.method == 'GET':
+            products = SuggestedProduct.objects.filter(user=request.user)
+            data = [{
+                'id': p.id,
+                'name': p.name,
+                'description': p.description,
+                'category': p.category,
+                'price': str(p.price),
+                'image': request.build_absolute_uri(p.image.url) if p.image else None,
+                'status': p.status,
+                'created_at': p.created_at.strftime('%Y-%m-%d %H:%M'),
+                'updated_at': p.updated_at.strftime('%Y-%m-%d %H:%M'),
+            } for p in products]
+            return Response({'products': data}, status=200)
+
+        elif request.method == 'POST':
+            name = request.data.get('name')
+            description = request.data.get('description')
+            category = request.data.get('category', 'skincare')
+            price = request.data.get('price')
+            image = request.FILES.get('image')
+
+            if not all([name, description, price]):
+                return Response({'error': 'Name, description, and price are required'}, status=400)
+
+            product = SuggestedProduct.objects.create(
+                user=request.user,
+                name=name,
+                description=description,
+                category=category,
+                price=price,
+                image=image,
+                status='pending'
+            )
+
+            return Response({
+                'message': 'Product added successfully',
+                'product': {
+                    'id': product.id,
+                    'name': product.name,
+                    'description': product.description,
+                    'category': product.category,
+                    'price': str(product.price),
+                    'image': request.build_absolute_uri(product.image.url) if product.image else None,
+                    'status': product.status,
+                    'created_at': product.created_at.strftime('%Y-%m-%d %H:%M'),
+                }
+            }, status=201)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@api_view(['PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def api_suggested_product_detail(request, product_id):
+    """Update or delete a suggested product"""
+    try:
+        product = SuggestedProduct.objects.get(id=product_id, user=request.user)
+
+        if request.method == 'DELETE':
+            product.delete()
+            return Response({'message': 'Product deleted successfully'}, status=200)
+
+        elif request.method == 'PUT':
+            name = request.data.get('name', product.name)
+            description = request.data.get('description', product.description)
+            category = request.data.get('category', product.category)
+            price = request.data.get('price', product.price)
+            image = request.FILES.get('image')
+
+            product.name = name
+            product.description = description
+            product.category = category
+            product.price = price
+            if image:
+                product.image = image
+            product.status = 'pending'
+            product.save()
+
+            return Response({
+                'message': 'Product updated successfully',
+                'product': {
+                    'id': product.id,
+                    'name': product.name,
+                    'description': product.description,
+                    'category': product.category,
+                    'price': str(product.price),
+                    'image': request.build_absolute_uri(product.image.url) if product.image else None,
+                    'status': product.status,
+                    'updated_at': product.updated_at.strftime('%Y-%m-%d %H:%M'),
+                }
+            }, status=200)
+
+    except SuggestedProduct.DoesNotExist:
+        return Response({'error': 'Product not found'}, status=404)
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 

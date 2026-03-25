@@ -11,6 +11,7 @@ function PartnershipDashboard({ setLoggedIn, userEmail }) {
     email: userEmail || "",
     description: "",
     productSuggestion: "",
+    aboutSuggestedProduct: "",
   });
   const [productPicture, setProductPicture] = useState(null);
   const [submitted, setSubmitted] = useState(false);
@@ -84,6 +85,7 @@ function PartnershipDashboard({ setLoggedIn, userEmail }) {
       submitData.append("email", formData.email);
       submitData.append("description", formData.description);
       submitData.append("productSuggestion", formData.productSuggestion);
+      submitData.append("aboutSuggestedProduct", formData.aboutSuggestedProduct);
       if (productPicture) {
         submitData.append("productPicture", productPicture);
       }
@@ -203,6 +205,7 @@ function PartnershipDashboard({ setLoggedIn, userEmail }) {
                   email: userEmail || "",
                   description: "",
                   productSuggestion: "",
+                  aboutSuggestedProduct: "",
                 });
                 setProductPicture(null);
               }}
@@ -291,13 +294,28 @@ function PartnershipDashboard({ setLoggedIn, userEmail }) {
 
               <div className="partnership-form-group">
                 <label htmlFor="productSuggestion">
-                  Product Suggestion for TwachaGuide
+                  Product Name
                 </label>
                 <textarea
                   id="productSuggestion"
                   name="productSuggestion"
-                  placeholder="Describe the product(s) you'd like to feature on our website..."
+                  placeholder="Name of the product(s) you'd like to feature on our website..."
                   value={formData.productSuggestion}
+                  onChange={handleChange}
+                  className="partnership-input"
+                  rows="2"
+                />
+              </div>
+
+              <div className="partnership-form-group">
+                <label htmlFor="aboutSuggestedProduct">
+                  About Suggested Product
+                </label>
+                <textarea
+                  id="aboutSuggestedProduct"
+                  name="aboutSuggestedProduct"
+                  placeholder="Provide more details about your suggested product (benefits, ingredients, usage, etc.)..."
+                  value={formData.aboutSuggestedProduct}
                   onChange={handleChange}
                   className="partnership-input"
                   rows="4"

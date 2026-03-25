@@ -426,15 +426,37 @@ def api_send_message(request):
             return None
 
     sender_role = get_role(request.user)
+    sender_profile = get_profile(request.user)
     recipient_role = get_role(recipient)
-    if sender_role == 'customer' and recipient_role != 'dermatologist':
-        return Response({'error': 'Customers can only message dermatologists'}, status=400)
-    if sender_role == 'customer' and recipient_role == 'dermatologist':
-        recipient_profile = get_profile(recipient)
-        if not recipient_profile or recipient_profile.verification_status != 'approved':
+    recipient_profile = get_profile(recipient)
+    
+    # Validate both users have profiles
+    if not sender_profile:
+        return Response({'error': 'Sender profile not found'}, status=400)
+    if not recipient_profile:
+        return Response({'error': 'Recipient profile not found'}, status=400)
+    
+    # Validate sender and recipient roles
+    if not sender_role:
+        return Response({'error': 'Sender role not configured'}, status=400)
+    if not recipient_role:
+        return Response({'error': 'Recipient role not configured'}, status=400)
+    
+    # Role-based message restrictions
+    # Customers can only message approved dermatologists
+    if sender_role == 'customer':
+        if recipient_role != 'dermatologist':
+            return Response({'error': 'Customers can only message dermatologists'}, status=400)
+        if recipient_profile.verification_status != 'approved':
             return Response({'error': 'You can only message approved dermatologists'}, status=403)
-    if sender_role == 'dermatologist' and recipient_role != 'customer':
-        return Response({'error': 'Dermatologists can only message customers'}, status=400)
+    
+    # Dermatologists can only message customers
+    elif sender_role == 'dermatologist':
+        if recipient_role != 'customer':
+            return Response({'error': 'Dermatologists can only message customers'}, status=400)
+    
+    # Partners and admins - allow messaging to any user for now
+    # Can be restricted further based on business logic
 
     msg = ChatMessage.objects.create(
         user=request.user, 

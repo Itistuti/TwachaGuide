@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import "./CustomerDashboard.css";
 
 const API = "http://127.0.0.1:8000";
-const OPENROUTER_API_KEY = "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"; // Replace with actual API key
+const OPENROUTER_API_KEY = process.env.REACT_APP_OPENROUTER_API_KEY || "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";
 const MODEL = "nvidia/nemotron-3-nano-30b-a3b:free";
 
 function CustomerDashboard({ setLoggedIn, userEmail }) {

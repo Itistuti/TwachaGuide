@@ -9,7 +9,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: white;
+  background: #16a34a;
   padding: 1.5rem 2rem;
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
@@ -18,22 +18,26 @@
 
 .admin-header h2 {
   margin: 0 0 0.3rem 0;
-  color: #0f172a;
+  color: #ffffff;
 }
 
 .admin-header p {
   margin: 0;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .logout-btn {
   padding: 0.7rem 1.5rem;
-  background: #0f172a;
-  color: white;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
   border: none;
   border-radius: 999px;
   cursor: pointer;
   font-weight: 600;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.26);
 }
 
 .admin-error {

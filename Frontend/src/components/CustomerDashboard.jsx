@@ -532,7 +532,7 @@ function CustomerDashboard({ setLoggedIn, userEmail }) {
       throw new Error('API key not configured. Please add REACT_APP_OPENROUTER_API_KEY to your .env file and restart the app.');
     }
 
-    const prompt = `Based on the following user skincare profile, provide personalized skincare recommendations. Include daily routine suggestions, product recommendations, and tips. Keep it concise but comprehensive.
+    const prompt = `Based on the following user skincare profile, send a SIMPLE message focused on skincare INGREDIENTS and how they help the user's main concern. Keep it short and easy to understand.
 
 User Profile:
 - Age Group: ${answers.ageGroup}
@@ -547,7 +547,11 @@ User Profile:
 - Water Intake: ${answers.water}
 - Desired Goal: ${answers.desiredGoal}
 
-Provide recommendations in a structured format with sections for Morning Routine, Evening Routine, Product Suggestions, and Additional Tips.`;
+Reply in EXACTLY this format (4 short lines, no extra paragraphs):
+Problem: <1 line>
+Ingredient(s): <1–3 ingredients>
+How it helps: <1–2 simple sentences>
+Caution: <1 short line, or 'None'>`;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -585,7 +589,13 @@ Provide recommendations in a structured format with sections for Morning Routine
     setChatLoading(true);
 
     try {
-      const context = `User's skincare profile:
+      const context = `You are a skincare assistant. Follow these rules strictly:
+- Output ONLY bullet points.
+- Use '-' for bullets.
+- No markdown formatting (no **, no headings, no numbered lists, no quotes).
+- Keep it short and clear.
+
+User's skincare profile:
 - Age Group: ${onboardingAnswers.ageGroup}
 - Skin Type: ${onboardingAnswers.skinType}
 - Primary Concerns: ${onboardingAnswers.primaryConcern?.join(', ')}
@@ -623,7 +633,13 @@ User's new question: ${chatInput}`;
         throw new Error(data.error?.message || `API error: ${response.status}`);
       }
 
-      const aiMessage = { role: 'assistant', content: data.choices[0].message.content };
+      const rawContent = data.choices?.[0]?.message?.content ?? '';
+      const cleanedContent = rawContent
+        .replace(/\*\*/g, '')
+        .replace(/^\s*#+\s*/gm, '')
+        .trim();
+
+      const aiMessage = { role: 'assistant', content: cleanedContent };
       setChatMessages([...newMessages, aiMessage]);
     } catch (error) {
       console.error('Error sending chat message:', error);
